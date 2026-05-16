@@ -330,7 +330,19 @@ chrome.runtime.onMessage.addListener((msg, _sender, reply) => {
   }
   if (msg.action === 'setWorkspaceUrl') {
     const url = msg.url;
-    if (url && url.startsWith('https://opencode.ai/workspace/')) {
+    // Empty string = clear manual override, go back to auto-discovery
+    if (!url) {
+      chrome.storage.local.get('config', ({ config }) => {
+        const newConfig = { ...(config || {}) };
+        delete newConfig.usageUrl;
+        chrome.storage.local.set({ config: newConfig });
+        chrome.storage.local.remove('discoveredUrl', () => {
+          reply({ success: true });
+        });
+      });
+      return true;
+    }
+    if (url.startsWith('https://opencode.ai/workspace/')) {
       chrome.storage.local.get('config', ({ config }) => {
         const newConfig = { ...(config || {}), usageUrl: url };
         chrome.storage.local.set({ config: newConfig, discoveredUrl: url }, () => {

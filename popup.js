@@ -245,11 +245,8 @@ document.getElementById('detectUrlBtn').addEventListener('click', () => {
   chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
     const currentUrl = tabs[0]?.url;
     if (currentUrl && currentUrl.includes('/workspace/')) {
-      // Normalize URL to end with /go
-      let url = currentUrl.replace(/\/?$/, '/go');
-      if (!url.endsWith('/go')) {
-        url = url + '/go';
-      }
+      // Normalize URL to end with /go (handle trailing slash and existing /go)
+      let url = currentUrl.replace(/\/?(?:\/go)?$/, '/go');
       chrome.runtime.sendMessage({ action: 'setWorkspaceUrl', url }, (res) => {
         if (res?.success) {
           // Refresh to show data
