@@ -1,5 +1,7 @@
 # opencode Go-Zen Usage Monitor
 
+English | [日本語](README.ja.md)
+
 A clean, terminal-inspired Chrome extension that visualizes your **OpenCode Go plan usage** and **Zen credit balance** directly in the browser toolbar. No API keys, no extra logins — it just reads your existing session.
 
 ![Screenshot](docs/screenshot.png)
@@ -10,8 +12,7 @@ A clean, terminal-inspired Chrome extension that visualizes your **OpenCode Go p
 
 | Feature | Description |
 |---------|-------------|
-| **Toolbar Icon** | Circular progress icon showing how much of your rolling (5H) limit you've consumed. Color shifts in 20% steps from green (plenty left) to red (nearly exhausted). |
-| **Badge Text** | Current Zen prepaid balance shown as a compact badge (e.g. `$12`, `$0.5`). |
+| **Toolbar Icon** | Dual horizontal bars: top = 5H rolling limit (5 discrete blocks, 20% each), bottom = Zen balance color + text when enabled, or 7D weekly limit when disabled. Color shifts from green to red based on used %. |
 | **Popup Dashboard** | Click the icon for a detailed breakdown: rolling 5H limit, weekly 7D limit with reset countdown, and Zen credit balance. All in a dark, TUI-inspired aesthetic. |
 | **Auto-refresh** | Background Service Worker fetches fresh data at a configurable interval (default: every 30 minutes). |
 | **Session Auth** | Uses your existing opencode.ai browser cookies. No manual login or token configuration required. **Your password is never visible to this extension.** |
@@ -20,13 +21,13 @@ A clean, terminal-inspired Chrome extension that visualizes your **OpenCode Go p
 
 The icon and progress bars change color based on **how much you've used**, not how much is left:
 
-| Used % | Color | Meaning |
-|--------|-------|---------|
-| 0% – 20% | 🟢 Green | Plenty of headroom |
-| 21% – 40% | 🟡 Lime | Still comfortable |
-| 41% – 60% | 🟡 Yellow | Halfway there |
-| 61% – 80% | 🟠 Orange | Getting tight |
-| 81% – 100% | 🔴 Red | Running low |
+| Used % | Color |
+|--------|-------|
+| 0% – 20% | 🟢 Green |
+| 21% – 40% | 🟡 Lime |
+| 41% – 60% | 🟡 Yellow |
+| 61% – 80% | 🟠 Orange |
+| 81% – 100% | 🔴 Red |
 
 ---
 
@@ -115,7 +116,7 @@ To update after pulling new changes:
 ```
 opencode-usage-monitor/
 ├── manifest.json      # Extension manifest (Manifest V3)
-├── background.js      # Service Worker — fetch, parse, cache, update icon/badge
+├── background.js      # Service Worker — fetch, parse, cache, update icon
 ├── popup.html         # Terminal-styled popup UI
 ├── popup.js           # Popup renderer and settings handler
 ├── docs/
@@ -148,14 +149,18 @@ No external servers are contacted. All data stays on your machine.
 
 ---
 
-## Configuration
+## Settings
 
-Click the **▸ Settings** panel inside the popup to change the auto-refresh interval:
+![Settings](docs/screenshot2.png)
 
-- **1 min** — useful while developing or debugging
-- **5 / 15 / 30 / 60 min** — standard intervals for daily use
+Click the **▸ Settings** panel inside the popup to configure:
 
-The setting is persisted in `chrome.storage.local`.
+- **Show Zen balance badge** — toggle the bottom bar between Zen balance (color + compact text) and 7D weekly limit bar. Default: ON.
+- **Auto-refresh interval** — how often the background worker fetches fresh data:
+  - **1 min** — useful while developing or debugging
+  - **5 / 15 / 30 / 60 min** — standard intervals for daily use
+
+Settings are persisted in `chrome.storage.local`.
 
 ---
 

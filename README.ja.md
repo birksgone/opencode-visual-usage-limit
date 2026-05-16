@@ -1,6 +1,9 @@
 # opencode Go-Zen Usage Monitor
 
-クリーンなターミナル風のChrome拡張機能で、ブラウザのツールバーに直接**OpenCode Goプランの使用量**と**Zenクレジット残高**を可視化します。APIキーも追加ログインも不要 — 既存のセッションを読み取るだけです。
+[English](README.md) | 日本語
+
+ターミナル風のChrome拡張機能で、ブラウザのツールバーに直接**サブスクのOpenCode Go使用量**と**Zenのクレジット残高**を表示します。APIキーも追加ログインも不要 — 既存のセッションを読み取るだけの安心設計。
+UIをシンプルにするため日本語にはしていませんが。まぁわかるよねと思って。
 
 ![Screenshot](docs/screenshot.png)
 
@@ -10,8 +13,7 @@
 
 | 機能 | 説明 |
 |------|------|
-| **ツールバーアイコン** | Rolling（5H）制限の消費量を示す円形プログレスアイコン。20%刻みで色が変化し、緑（余裕あり）から赤（残りわずか）まで。 |
-| **バッジテキスト** | 現在のZenプリペイド残高をコンパクトなバッジで表示（例：`$12`、`$0.5`）。 |
+| **ツールバーアイコン** | 上下2本の横棒アイコン：上段＝5H Rolling制限（5ブロック、20%刻み）、下段＝Zen残高の色＋テキスト（ON時）または7D Weekly制限（OFF時）。使用%に応じて緑から赤へ色変化。 |
 | **ポップアップダッシュボード** | アイコンをクリックすると詳細表示：Rolling 5H制限、Weekly 7D制限とリセットカウントダウン、Zenクレジット残高。暗いTUI風のデザイン。 |
 | **自動更新** | バックグラウンドのService Workerが設定可能な間隔で最新データを取得（デフォルト：30分ごと）。 |
 | **セッション認証** | 既存のopencode.aiブラウザCookieを使用。手動ログインやトークン設定は不要。**パスワードはこの拡張機能から見えません。** |
@@ -20,22 +22,22 @@
 
 アイコンとプログレスバーは**残りではなく、使用した量**に基づいて色が変わります：
 
-| 使用% | 色 | 意味 |
-|--------|-------|---------|
-| 0% – 20% | 🟢 緑 | 十分に余裕あり |
-| 21% – 40% | 🟡 黄緑 | まだ快適 |
-| 41% – 60% | 🟡 黄色 | 半分使った |
-| 61% – 80% | 🟠 オレンジ | 厳しくなってきた |
-| 81% – 100% | 🔴 赤 | 残りわずか |
+| 使用% | 色 |
+|--------|-------|
+| 0% – 20% | 🟢 緑 |
+| 21% – 40% | 🟡 黄緑 |
+| 41% – 60% | 🟡 黄色 |
+| 61% – 80% | 🟠 オレンジ |
+| 81% – 100% | 🔴 赤 |
 
 ---
 
 ## 動作原理
 
-OpenCodeのダッシュボードは**SolidJS**で構築され、インライン`<script>`タグでステートをハイドレートしています。この拡張機能は以下のように動作します：
+OpenCodeのダッシュボードは**SolidJS**で構築。この拡張機能は以下のように動作します：
 
 1. **ワークスペースURLを自動検出**（ベストエフォート）：
-   - `opencode.ai`のCookieからワークスペースIDを確認
+   - `opencode.ai`のブラウザCookieからワークスペースIDを確認
    - 既存のセッションを使って`https://opencode.ai/go`からのリダイレクトを追跡
    - **「Detect from current tab」**をクリックした際、現在のブラウザタブをフォールバックとして読み取り
 2. **`/go`ページのハイドレーションペイロード**（`_$HY`レジストリ）を解析して以下を抽出：
@@ -44,7 +46,7 @@ OpenCodeのダッシュボードは**SolidJS**で構築され、インライン`
    - `balance` → Zenクレジット（10⁻⁸ USD単位で保存）
 3. **すべてのデータを**`chrome.storage.local`**にキャッシュ**し、`chrome.alarms`で更新
 
-OpenCode Goプラン制限の公式情報：[Reddit — Official OpenCode Go limits published](https://www.reddit.com/r/opencodeCLI/comments/1ril0ff/official_opencode_go_limits_published/)
+OpenCode Goプラン制限の公式情報はここからのものをベースとしています：[Reddit — Official OpenCode Go limits published](https://www.reddit.com/r/opencodeCLI/comments/1ril0ff/official_opencode_go_limits_published/)
 
 > ⚠️ **自動検出はベストエフォートです。** 失敗した場合（CookieにワークスペースIDが含まれていない、リダイレクトで公開されていないなど）、**▸ Settings**で手動でワークスペースURLを貼り付けることもできます。
 
@@ -115,7 +117,7 @@ OpenCode Goプラン制限の公式情報：[Reddit — Official OpenCode Go lim
 ```
 opencode-usage-monitor/
 ├── manifest.json      # 拡張機能マニフェスト（Manifest V3）
-├── background.js      # Service Worker — 取得、解析、キャッシュ、アイコン/バッジ更新
+├── background.js      # Service Worker — 取得、解析、キャッシュ、アイコン更新
 ├── popup.html         # ターミナル風ポップアップUI
 ├── popup.js           # ポップアップレンダラーと設定ハンドラー
 ├── docs/
@@ -150,10 +152,14 @@ opencode-usage-monitor/
 
 ## 設定
 
-ポップアップ内の**▸ Settings**パネルをクリックして、自動更新間隔を変更：
+![Settings](docs/screenshot2.png)
 
-- **1分** — 開発・デバッグ中に便利
-- **5 / 15 / 30 / 60分** — 通常使用の標準間隔
+ポップアップ内の**▸ Settings**パネルをクリックして設定を変更：
+
+- **Show Zen balance badge** — 下段の表示を切り替え：ONでZen残高（色＋テキスト）、OFFで7D Weekly制限バー。デフォルト：ON。
+- **自動更新間隔** — バックグラウンドでデータを取得する頻度：
+  - **1分** — 開発・デバッグ中に便利
+  - **5 / 15 / 30 / 60分** — 通常使用の標準間隔
 
 設定は`chrome.storage.local`に保存されます。
 

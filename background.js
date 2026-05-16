@@ -65,77 +65,119 @@ async function discoverWorkspaceUrl() {
   }
 }
 
-// Remaining % → color
-function getStatusColor(remainingPct) {
-  if (remainingPct > 80) return '#22c55e';
-  if (remainingPct > 60) return '#84cc16';
-  if (remainingPct > 40) return '#eab308';
-  if (remainingPct > 20) return '#f97316';
+// Used % → color (icon bars)
+function getStatusColor(usedPct) {
+  if (usedPct < 20) return '#22c55e';
+  if (usedPct < 40) return '#84cc16';
+  if (usedPct < 60) return '#eab308';
+  if (usedPct < 80) return '#f97316';
   return '#ef4444';
 }
 
-// Draw circular progress icon using OffscreenCanvas
-async function drawIcon(remainingPct, size) {
+// Zen balance → badge color
+function getZenBadgeColor(balance) {
+  if (balance == null || isNaN(balance)) return '#64748b';
+  const n = Number(balance);
+  if (n < 2) return '#ef4444';   // red — critically low
+  if (n < 5) return '#f97316';   // orange — running low
+  return '#22c55e';              // green — healthy
+}
+
+const BLOCK_COUNT = 5;  // 5 discrete blocks per bar
+
+function drawUsedBar(ctx, usedPct, x, y, w, h) {
+  const blockW = Math.floor(w / BLOCK_COUNT);
+  const gap = 1;  // 1px gap between blocks
+  const drawW = Math.max(1, blockW - gap);
+
+  // Determine how many blocks to fill (1–5, matching 20% color tiers)
+  const filledBlocks = Math.min(BLOCK_COUNT, Math.ceil(usedPct / 20));
+  const color = getStatusColor(usedPct);
+
+  for (let i = 0; i < BLOCK_COUNT; i++) {
+    const bx = x + i * blockW;
+    if (i < filledBlocks) {
+      ctx.fillStyle = color;
+    } else {
+      ctx.fillStyle = '#1e1e1e';  // unused — dark
+    }
+    ctx.fillRect(bx, y, drawW, h);
+  }
+}
+
+// Draw dual-bar icon: top = 5H used, bottom = Zen balance text (if enabled) or 7D used
+async function drawIcon(rollingUsed, weeklyUsed, zenBalance, showZenBadge, size) {
   const canvas = new OffscreenCanvas(size, size);
   const ctx = canvas.getContext('2d');
-  const color = getStatusColor(remainingPct);
-  const cx = size / 2;
-  const cy = size / 2;
-  const radius = size * 0.38;
-  const lw = Math.max(2, size * 0.13);
 
-  ctx.clearRect(0, 0, size, size);
+  // Background — fill entire canvas, no wasted margin
+  ctx.fillStyle = '#0d0d0d';
+  ctx.fillRect(0, 0, size, size);
 
-  // Track (used portion — dark)
-  ctx.strokeStyle = '#2a2a2a';
-  ctx.lineWidth = lw;
-  ctx.beginPath();
-  ctx.arc(cx, cy, radius, 0, Math.PI * 2);
-  ctx.stroke();
+  const margin = Math.max(1, Math.round(size * 0.03));  // minimal side margin
+  const gap = 1;  // 1px gap between bars
+  const barW = size - margin * 2;
 
-  // Arc (remaining portion — colored)
-  if (remainingPct > 0) {
-    const start = -Math.PI / 2;
-    const end = start + (remainingPct / 100) * Math.PI * 2;
-    ctx.strokeStyle = color;
-    ctx.lineWidth = lw;
-    ctx.lineCap = 'butt';
-    ctx.beginPath();
-    ctx.arc(cx, cy, radius, start, end);
-    ctx.stroke();
+  let topH, bottomH;
+  if (showZenBadge) {
+    // 30% / 70% split when Zen text is shown (larger bottom for readability)
+    topH = Math.max(2, Math.round((size - margin * 2 - gap) * 0.30));
+    bottomH = size - margin * 2 - gap - topH;
+  } else {
+    // 50% / 50% split when both are bars
+    topH = bottomH = Math.max(2, Math.round((size - margin * 2 - gap) / 2));
   }
 
-  // Center percentage text (only at larger sizes for legibility)
-  if (size >= 48) {
+  const y1 = margin;
+  const y2 = margin + topH + gap;
+
+  // Top bar: 5H Rolling used %
+  drawUsedBar(ctx, rollingUsed, margin, y1, barW, topH);
+
+  // Bottom bar: Zen balance text (when enabled) or 7D Weekly used %
+  if (showZenBadge) {
+    const color = getZenBadgeColor(zenBalance);
     ctx.fillStyle = color;
-    ctx.font = `bold ${Math.round(size * 0.27)}px Arial`;
-    ctx.textAlign = 'center';
-    ctx.textBaseline = 'middle';
-    ctx.fillText(`${Math.round(remainingPct)}`, cx, cy);
+    ctx.fillRect(margin, y2, barW, bottomH);
+
+    // Draw balance text — use full height, no vertical padding
+    const text = formatBadgeText(zenBalance);
+    if (text) {
+      ctx.fillStyle = '#000000';
+      // Scale font to fill the bar height
+      ctx.font = `bold ${Math.max(8, bottomH)}px Arial, sans-serif`;
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      // Shift baseline down 1px to visually balance (font ascender bias)
+      ctx.fillText(text, margin + barW / 2, y2 + bottomH / 2 + 1);
+    }
+  } else {
+    drawUsedBar(ctx, weeklyUsed, margin, y2, barW, bottomH);
   }
 
   return ctx.getImageData(0, 0, size, size);
 }
 
-async function updateIcon(remainingPct) {
+async function updateIcon(rollingUsed, weeklyUsed, zenBalance, showZenBadge) {
   try {
     const imageData = {
-      32: await drawIcon(remainingPct, 32),
-      128: await drawIcon(remainingPct, 128),
+      32: await drawIcon(rollingUsed, weeklyUsed, zenBalance, showZenBadge, 32),
+      128: await drawIcon(rollingUsed, weeklyUsed, zenBalance, showZenBadge, 128),
     };
     await chrome.action.setIcon({ imageData });
   } catch (e) {
     console.warn('[OpenCode] setIcon failed:', e);
   }
-  chrome.action.setBadgeBackgroundColor({ color: getStatusColor(remainingPct) });
 }
 
 function formatBadgeText(zenBalance) {
   if (zenBalance == null || isNaN(zenBalance)) return '';
   const n = Number(zenBalance);
-  if (n >= 100) return `$${Math.floor(n)}`;
-  if (n >= 10)  return `$${n.toFixed(0)}`;
-  return `$${n.toFixed(2)}`.substring(0, 5);
+  // Keep it ≤ 4 characters so Chrome draws a compact pill
+  if (n >= 1000) return `${Math.floor(n / 1000)}k`;   // e.g. "2k" for $2,000
+  if (n >= 100)  return `${Math.floor(n)}`;           // e.g. "123"
+  if (n >= 10)   return `${Math.floor(n)}`;           // e.g. "12"
+  return `${n.toFixed(1)}`;                            // e.g. "5.1", "0.5"
 }
 
 // ── SolidJS hydration parser ───────────────────────────────────────────────
@@ -232,8 +274,6 @@ async function fetchAndUpdate() {
         error: 'workspace_not_found',
         lastUpdated: Date.now(),
       });
-      chrome.action.setBadgeText({ text: '?' });
-      chrome.action.setBadgeBackgroundColor({ color: '#f97316' });
       return;
     }
   }
@@ -246,8 +286,6 @@ async function fetchAndUpdate() {
 
     if (res.status === 401 || res.status === 403) {
       await chrome.storage.local.set({ error: 'not_logged_in', lastUpdated: Date.now() });
-      chrome.action.setBadgeText({ text: '!' });
-      chrome.action.setBadgeBackgroundColor({ color: '#ef4444' });
       return;
     }
 
@@ -260,21 +298,23 @@ async function fetchAndUpdate() {
         error: 'workspace_not_found',
         lastUpdated: Date.now(),
       });
-      chrome.action.setBadgeText({ text: '?' });
-      chrome.action.setBadgeBackgroundColor({ color: '#f97316' });
       return;
     }
 
     await chrome.storage.local.set({ usageData, error: null, lastUpdated: Date.now() });
 
-    // Update icon (rolling / 5h remaining %)
-    const rollingRemaining = usageData?.rolling?.remaining;
-    if (rollingRemaining != null) {
-      await updateIcon(rollingRemaining);
+    // Update icon: top bar = 5H, bottom bar = Zen color (if enabled) or 7D
+    const showZenBadge = config?.showZenBadge !== false;
+    const rollingUsed = usageData?.rolling?.used;
+    const weeklyUsed = usageData?.weekly?.used;
+    const zenBalance = usageData?.zen?.balance;
+
+    if (rollingUsed != null) {
+      await updateIcon(rollingUsed, weeklyUsed, zenBalance, showZenBadge);
     }
 
-    // Update badge (Zen credit)
-    chrome.action.setBadgeText({ text: formatBadgeText(usageData?.zen?.balance) });
+    // No badge text anymore — everything is inside the icon image
+    chrome.action.setBadgeText({ text: '' });
 
   } catch (err) {
     console.error('[OpenCode] Fetch error:', err);
@@ -358,6 +398,18 @@ chrome.runtime.onMessage.addListener((msg, _sender, reply) => {
   if (msg.action === 'openLogin') {
     chrome.tabs.create({ url: 'https://opencode.ai/go' });
     reply({ success: true });
+    return true;
+  }
+  if (msg.action === 'setZenBadge') {
+    const show = Boolean(msg.show);
+    chrome.storage.local.get('config', ({ config }) => {
+      const newConfig = { ...(config || {}), showZenBadge: show };
+      chrome.storage.local.set({ config: newConfig }, () => {
+        // Refresh badge immediately
+        fetchAndUpdate();
+        reply({ success: true, show });
+      });
+    });
     return true;
   }
 });

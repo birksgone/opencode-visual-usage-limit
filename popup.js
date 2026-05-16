@@ -180,6 +180,7 @@ function render(usageData, error, lastUpdated) {
 function initSettings() {
   const select = document.getElementById('intervalSelect');
   const urlInput = document.getElementById('workspaceUrl');
+  const zenCheck = document.getElementById('zenBadgeCheck');
 
   // Load current settings
   chrome.storage.local.get('config', ({ config }) => {
@@ -188,6 +189,8 @@ function initSettings() {
     if (config?.usageUrl) {
       urlInput.value = config.usageUrl;
     }
+    // Default true if unset
+    zenCheck.checked = config?.showZenBadge !== false;
   });
 
   select.addEventListener('change', () => {
@@ -196,6 +199,17 @@ function initSettings() {
       if (res?.success) {
         select.style.borderColor = '#22c55e';
         setTimeout(() => { select.style.borderColor = ''; }, 800);
+      }
+    });
+  });
+
+  // Zen badge toggle
+  zenCheck.addEventListener('change', () => {
+    const show = zenCheck.checked;
+    chrome.runtime.sendMessage({ action: 'setZenBadge', show }, (res) => {
+      if (res?.success) {
+        zenCheck.style.outline = '2px solid #22c55e';
+        setTimeout(() => { zenCheck.style.outline = ''; }, 800);
       }
     });
   });
