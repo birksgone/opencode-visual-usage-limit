@@ -169,6 +169,12 @@ Firefox is **not supported** out of the box due to MV3 Service Worker and API di
 
 ---
 
+## Disclaimer
+
+This extension is an **unofficial, community-made tool**. It reverse-engineers the OpenCode dashboard's HTML/SolidJS hydration payload to extract usage data. While we do our best to keep calculations accurate, **we are not responsible for any discrepancies** between this extension's figures and the official OpenCode billing dashboard. Use at your own risk.
+
+---
+
 ## License
 
 MIT License — feel free to fork, modify, and share.
