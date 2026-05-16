@@ -123,8 +123,8 @@ function render(usageData, error, lastUpdated) {
     const countdown5h = fmtCountdown(rolling.resetAt);
     setDetail('detail5h',
       `Used <span class="hi">${Math.round(used)}%</span>` +
-      ` &nbsp;·&nbsp; Remaining <span class="hi">${Math.round(remaining)}%</span>` +
-      (countdown5h ? ` &nbsp;·&nbsp; <span class="hi">${countdown5h}</span>` : '')
+      ` / Rem <span class="hi">${Math.round(remaining)}%</span>` +
+      (countdown5h ? ` · <span class="hi">${countdown5h}</span>` : '')
     );
 
     document.getElementById('statusDot').style.background = dotColor(used);
@@ -143,8 +143,8 @@ function render(usageData, error, lastUpdated) {
     const countdown = fmtCountdown(weekly.resetAt);
     setDetail('detail7d',
       `Used <span class="hi">${Math.round(used)}%</span>` +
-      ` &nbsp;·&nbsp; Remaining <span class="hi">${Math.round(remaining)}%</span>` +
-      (countdown ? ` &nbsp;·&nbsp; <span class="hi">${countdown}</span>` : '')
+      ` / Rem <span class="hi">${Math.round(remaining)}%</span>` +
+      (countdown ? ` · <span class="hi">${countdown}</span>` : '')
     );
   } else {
     setBar('bar7d', 'pct7d', null);
