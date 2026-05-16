@@ -1,0 +1,15 @@
+{
+  "manifest_version": 3,
+  "name": "opencode Go-Zen Usage Monitor",
+  "version": "1.0.0",
+  "description": "Real-time usage tracker for OpenCode Go plan limits and Zen credit balance",
+  "permissions": ["storage", "alarms", "activeTab", "cookies"],
+  "host_permissions": ["https://opencode.ai/*"],
+  "background": {
+    "service_worker": "background.js"
+  },
+  "action": {
+    "default_popup": "popup.html",
+    "default_title": "opencode Go-Zen Usage Monitor"
+  }
+}
