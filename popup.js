@@ -120,9 +120,11 @@ function render(usageData, error, lastUpdated) {
     const remaining = Number(rolling.remaining);
 
     setBar('bar5h', 'pct5h', used);
+    const countdown5h = fmtCountdown(rolling.resetAt);
     setDetail('detail5h',
       `Used <span class="hi">${Math.round(used)}%</span>` +
-      ` &nbsp;·&nbsp; Remaining <span class="hi">${Math.round(remaining)}%</span>`
+      ` &nbsp;·&nbsp; Remaining <span class="hi">${Math.round(remaining)}%</span>` +
+      (countdown5h ? ` &nbsp;·&nbsp; <span class="hi">${countdown5h}</span>` : '')
     );
 
     document.getElementById('statusDot').style.background = dotColor(used);

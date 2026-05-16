@@ -39,10 +39,12 @@ OpenCode's dashboard is built with **SolidJS** and hydrates its state via inline
    - Follows the redirect from `https://opencode.ai/go` using your existing session
    - Falls back to reading the **current browser tab** when you click **"Detect from current tab"**
 2. **Parses the hydration payload** (`_$HY` registry) from the `/go` page to extract:
-   - `rollingUsage.usagePercent` → 5-hour rolling window
+   - `rollingUsage.usagePercent` + `resetInSec` → 5-hour rolling window + countdown
    - `weeklyUsage.usagePercent` + `resetInSec` → 7-day weekly window + countdown
    - `balance` → Zen credit (stored in 10⁻⁸ USD units)
 3. **Caches all data** in `chrome.storage.local` and refreshes via `chrome.alarms`
+
+Official source for OpenCode Go plan limits: [Reddit — Official OpenCode Go limits published](https://www.reddit.com/r/opencodeCLI/comments/1ril0ff/official_opencode_go_limits_published/)
 
 > ⚠️ **Auto-detection is best-effort.** If it fails (e.g. cookies don't contain the workspace ID, or the redirect doesn't expose it), you can always paste your workspace URL manually in **▸ Settings**.
 
